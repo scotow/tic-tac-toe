@@ -4,33 +4,236 @@ html, body {
     margin: 0;
     padding: 0;
     background: black;
+    font-size: 0;
+}
 
+.center-wrapper {
     text-align: center;
     white-space: nowrap;
 }
 
-body::before {
+.center-wrapper::before {
     content: '';
     display: inline-block;
     height: 100%;
     vertical-align: middle;
 }
 
-.gamepanel-wrapper {
+.center {
     text-align: center;
     display: inline-block;
     vertical-align: middle;
 }
 
-.gamepanel-border {
-    padding: 5px;
+.grid {
     width: 600px;
     height: 600px;
-
-    background: gray;
 }
 
-#gamepanel {
+.line {
+    height: 33.333333333%;
+    box-sizing: border-box;
+}
+
+.line:nth-child(-n+2){
+    border-bottom: 3px solid white;
+}
+
+.cell {
+    width: 33.333333333%;
+    height: 100%;
+    display: inline-block;
+    position: relative;
+}
+
+.cell:empty {
+    cursor: pointer;
+}
+
+.cell:nth-child(-n+2){
+    border-right: 3px solid white;
+}
+
+.cross::before, .cross::after{
+    position: absolute;
+    content: "";
+    display: block;
+    background-color: #fff;
+    left: 90px;
+    top: 20px;
+    width: 20px;
+    height: 160px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    opacity: 1;
+}
+
+.cross::before {
+    animation: cross 200ms forwards, cross1 125ms forwards 300ms;
+}
+
+.cross::after {
+    animation: cross 200ms forwards, cross2 125ms forwards 300ms;
+}
+
+@keyframes cross {
+
+    from {
+        opacity: 0;
+        height: 20px;
+        top: 90px;
+    }
+
+    to {
+        opacity: 1;
+        height: 160px;
+        top: 20px;
+    }
+
+}
+
+@keyframes cross1 {
+
+    to {
+        -webkit-transform: rotate(-45deg);
+        -moz-transform: rotate(-45deg);
+        transform: rotate(-45deg);
+    }
+
+}
+
+@keyframes cross2 {
+
+    to {
+        -webkit-transform: rotate(45deg);
+        -moz-transform: rotate(45deg);
+        transform: rotate(45deg);
+    }
+
+}
+
+.circle {
+    width: 100px;
+    height: 100px;
+    opacity: 1;
+    border: 20px solid white;
+    -webkit-border-radius: 50%;
+    -moz-border-radius: 50%;
+    border-radius: 50%;
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    animation: circle1 150ms forwards, circle2 300ms forwards 200ms;
+}
+
+@keyframes circle1 {
+
+    from {
+        top: 85px;
+        left: 85px;
+        border-width: 0;
+        opacity: 0;
+        width: 30px;
+        height: 30px;
+    }
+
+    to {
+        top: 65px;
+        left: 65px;
+        border-width: 20px;
+        opacity: 1;
+        width: 30px;
+        height: 30px;
+    }
+
+}
+
+@keyframes circle2 {
+
+    from {
+        top: 65px;
+        left: 65px;
+        width: 30px;
+        height: 30px;
+    }
+
+    to {
+        top: 30px;
+        left: 30px;
+        width: 100px;
+        height: 100px;
+    }
+
+}
+
+.blink {
+    animation: blink 300ms steps(2) 3;
+}
+
+@keyframes blink {
+
+    50% {
+        visibility: hidden;
+    }
+
+}
+
+.players-bar {
+    margin-top: 10px;
+}
+
+.player-nickname, #play-again {
+    color: white;
+    font: 20px "Raleway", sans-serif;
+    text-transform: capitalize;
+    position: relative;
+}
+
+.player-nickname::after, #play-again::after {
+    position: absolute;
+    content: "";
+    display: block;
+    width: 0;
+    height: 3px;
     background: white;
-    outline: none;
+    bottom: -8px;
+    transition: 500ms;
+    left: 50%;
+}
+
+.player-turn::after, #play-again:hover::after {
+    width: 100%;
+    left: 0;
+}
+
+/*.player-turn::after {*/
+    /*!*animation: timer 14.5s forwards 500ms;*!*/
+/*}*/
+
+@keyframes timer {
+
+    from {
+        width: 100%;
+        left: 0;
+    }
+
+    to {
+        width: 0;
+        left: 50%;
+    }
+
+}
+
+#player1 {
+    float: left;
+}
+
+#player2 {
+    float: right;
+}
+
+#play-again {
+    display: none;
+    cursor: pointer;
 }
