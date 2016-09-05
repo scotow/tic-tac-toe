@@ -219,6 +219,7 @@ io.on('connection', function(socket){
 
     var player;
 
+
     socket.emit('nickname');
 
     socket.on('join', function(nickname){
