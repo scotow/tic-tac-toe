@@ -182,7 +182,7 @@ function Game(players){
 function Player(nickname, socket){
 
     this.nickname = nickname.trim();
-    this.nickname = nickname ? (nickname.length > 16 ? nickname.substr(0, 16) + "..." : nickname) : "Player " + playerIndex++;
+    this.nickname = nickname ? (nickname.length > 10 ? nickname.substr(0, 10) + "..." : nickname) : "Player " + playerIndex++;
     this.socket = socket;
 
     this.playAgain = function(){
@@ -218,7 +218,6 @@ function searchGame(player){
 io.on('connection', function(socket){
 
     var player;
-
 
     socket.emit('nickname');
 
