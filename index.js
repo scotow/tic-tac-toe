@@ -148,13 +148,13 @@ function Game(players){
             return {
                 over: true,
                 player: 1,
-                positions: [{x: 2, y: 0}, {x: 1, y: 1}, {x: 2, y: 0}]
+                positions: [{x: 2, y: 0}, {x: 1, y: 1}, {x: 0, y: 2}]
             };
         }else if(this.grid[0][2] === 2 && this.grid[1][1] === 2 && this.grid[2][0] === 2){
             return {
                 over: true,
                 player: 2,
-                positions: [{x: 2, y: 0}, {x: 1, y: 1}, {x: 2, y: 0}]
+                positions: [{x: 2, y: 0}, {x: 1, y: 1}, {x: 0, y: 2}]
             };
         }
         for(var i = 0 ; i < 3 ; i++){
@@ -181,7 +181,8 @@ function Game(players){
 
 function Player(nickname, socket){
 
-    this.nickname = nickname ? nickname : "Player " + playerIndex++;
+    this.nickname = nickname.trim();
+    this.nickname = nickname ? (nickname.length > 16 ? nickname.substr(0, 16) + "..." : nickname) : "Player " + playerIndex++;
     this.socket = socket;
 
     this.playAgain = function(){

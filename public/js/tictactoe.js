@@ -17,7 +17,7 @@ $(function(){
         swal({
             title: 'Queued',
             text: 'Waiting for another player',
-            imageUrl: '/images/loading2.gif',
+            imageUrl: '/images/loading.gif',
             allowOutsideClick: false,
             allowEscapeKey: false,
             showConfirmButton: false
@@ -55,6 +55,7 @@ $(function(){
     socket.on('win', function(data){
         if(!data.forfeit){
             var swalDelay = 1500;
+            console.log(data.positions);
             setTimeout(function(){
                 data.positions.forEach(function(position){
                     position = position.y*3 + position.x;

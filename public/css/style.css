@@ -59,10 +59,10 @@ html, body {
     content: "";
     display: block;
     background-color: #fff;
-    left: 90px;
-    top: 20px;
-    width: 20px;
-    height: 160px;
+    left: 45%;
+    top: 10%;
+    width: 10%;
+    height: 80%;
     -webkit-border-radius: 4px;
     -moz-border-radius: 4px;
     border-radius: 4px;
@@ -81,14 +81,14 @@ html, body {
 
     from {
         opacity: 0;
-        height: 20px;
-        top: 90px;
+        height: 10%;
+        top: 45%;
     }
 
     to {
         opacity: 1;
-        height: 160px;
-        top: 20px;
+        height: 80%;
+        top: 10%;
     }
 
 }
@@ -114,37 +114,37 @@ html, body {
 }
 
 .circle {
-    width: 100px;
-    height: 100px;
+    width: 50%;
+    height: 50%;
     opacity: 1;
     border: 20px solid white;
     -webkit-border-radius: 50%;
     -moz-border-radius: 50%;
     border-radius: 50%;
     position: absolute;
-    top: 30px;
-    left: 30px;
+    top: 15%;
+    left: 15%;
     animation: circle1 150ms forwards, circle2 300ms forwards 200ms;
 }
 
 @keyframes circle1 {
 
     from {
-        top: 85px;
-        left: 85px;
+        top: 42.5%;
+        left: 42.5%;
         border-width: 0;
         opacity: 0;
-        width: 30px;
-        height: 30px;
+        width: 15%;
+        height: 15%;
     }
 
     to {
-        top: 65px;
-        left: 65px;
+        top: 32.5%;
+        left: 32.5%;
         border-width: 20px;
         opacity: 1;
-        width: 30px;
-        height: 30px;
+        width: 15%;
+        height: 15%;
     }
 
 }
@@ -152,17 +152,17 @@ html, body {
 @keyframes circle2 {
 
     from {
-        top: 65px;
-        left: 65px;
-        width: 30px;
-        height: 30px;
+        top: 32.5%;
+        left: 32.5%;
+        width: 15%;
+        height: 15%;
     }
 
     to {
-        top: 30px;
-        left: 30px;
-        width: 100px;
-        height: 100px;
+        top: 15%;
+        left: 15%;
+        width: 50%;
+        height: 50%;
     }
 
 }
@@ -206,10 +206,6 @@ html, body {
     width: 100%;
     left: 0;
 }
-
-/*.player-turn::after {*/
-    /*!*animation: timer 14.5s forwards 500ms;*!*/
-/*}*/
 
 @keyframes timer {
 
