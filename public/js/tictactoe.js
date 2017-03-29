@@ -49,7 +49,7 @@ $(function(){
     });
 
     socket.on('play', function(data){
-        $($(".cell")[data.position.y*3 + data.position.x]).append($("<div></div>").addClass(data.player === 1 ? "cross" : "circle"));
+        $(".cell").eq(data.position.y*3 + data.position.x).append($("<div></div>").addClass(data.player === 1 ? "cross" : "circle"));
     });
 
     socket.on('win', function(data){
