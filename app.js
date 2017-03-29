@@ -1,7 +1,7 @@
 var express = require('express');
 var app = express();
 var http = require('http').Server(app);
-var io = require('socket.io')(http);
+var io = require('socket.io')(http, {'pingTimeout': 4000, 'pingInterval': 2000});
 
 app.use(express.static(__dirname + '/public'));
 
@@ -10,7 +10,7 @@ app.get('/', function(req, res){
 });
 
 http.listen(3004, function(){
-    console.log('listening on *:3004');
+    console.log('Tic-Tac-Toe started on port 3005.');
 });
 
 
