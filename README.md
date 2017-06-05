@@ -2,7 +2,7 @@
 
 Simple two players Tic-Tac-Toe game build using NodeJS, socket.io and express, supporting parellel games and queue system.
 
-A instance of this game is currently running here: https://tictactoe.scotow.com.
+A instance of this game is currently running here: http://tictactoe.scotow.com.
 
 ## How to play:
 
