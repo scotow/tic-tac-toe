@@ -1,7 +1,9 @@
-var express = require('express');
-var app = express();
-var http = require('http').Server(app);
-var io = require('socket.io')(http, {'pingTimeout': 4000, 'pingInterval': 2000});
+const express = require('express');
+const app = express();
+const http = require('http').Server(app);
+const io = require('socket.io')(http, {'pingTimeout': 4000, 'pingInterval': 2000});
+
+const PORT = process.env.port || 3004;
 
 app.use(express.static(__dirname + '/public'));
 
@@ -9,8 +11,8 @@ app.get('/', function(req, res){
     res.sendFile(__dirname + '/public/index.html');
 });
 
-http.listen(3004, function(){
-    console.log('Tic-Tac-Toe started on port 3005.');
+http.listen(PORT, function(){
+    console.log(`Tic-Tac-Toe started on port ${PORT}.`);
 });
 
 
