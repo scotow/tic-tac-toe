@@ -1,53 +1,51 @@
-var express = require('express');
-var app = express();
-var http = require('http').Server(app);
-var io = require('socket.io')(http, {'pingTimeout': 4000, 'pingInterval': 2000});
+const ms = require('ms');
+const express = require('express');
+const app = express();
+const server = require('http').createServer(app);
+const io = require('socket.io')(server, {'pingTimeout': ms('2s'), 'pingInterval': ms('2s')});
+
+const PORT = process.env.port || 3004;
 
 app.use(express.static(__dirname + '/public'));
 
 app.get('/', function(req, res){
-    res.sendFile(__dirname + '/public/index.html');
+    res.sendFile(__dirname + '/public');
 });
 
-http.listen(3004, function(){
-    console.log('Tic-Tac-Toe started on port 3005.');
-});
-
-
-var queue = [];
-
-var playerIndex = 1;
-
+// Game
+let queue = [];
+let playerIndex = 1;
 
 function Game(players){
 
-    this.start = function(){
-
-        var self = this;
-
-        this.player1.socket.removeAllListeners('disconnect');
-        this.player1.socket.on('disconnect', function(){
-            self.player2.socket.emit('win', {forfeit: true});
-            self.player2.exitGame();
-            self.player2.playAgain();
-        });
-        this.player2.socket.removeAllListeners('disconnect');
-        this.player2.socket.on('disconnect', function(){
-            self.player1.socket.emit('win', {forfeit: true});
-            self.player1.exitGame();
-            self.player1.playAgain();
-        });
-
-
+    this._init = function() {
+        this.player1 = players[0]; this.player2 = players[1];
+        this.player1.opponent = this.player2; this.player2.opponent = this.player1;
         this.grid = [[0, 0, 0], [0, 0, 0], [0, 0 ,0]];
 
-        this.playerTurn = Math.random() < 0.5 ? this.player1 : this.player2;
+        if(this.player1.startingAvantage + this.player2.startingAvantage % 2 === 0) {
+            this._start(Math.random() < 0.5 ? this.player1 : this.player2);
+        } else {
+            this._start(this.player1.startingAvantage ? this.player2 : this.player1);
+        }
+    }
+
+    this._start = function(startingPlayer){
+        var self = this;
+        startingPlayer.startingAvantage = true;
+        startingPlayer.opponent.startingPlayer = false;
 
         players.forEach(function(player){
+            player.socket.removeAllListeners('disconnect');
+            player.socket.on('disconnect', function(){
+                player.opponent.socket.emit('win', {forfeit: true});
+                player.opponent.exitGame();
+                player.opponent.playAgain();
+            });
             player.socket.emit('start', {
                 player1: self.player1.nickname,
                 player2: self.player2.nickname,
-                start: self.playerTurn !== player
+                start: startingPlayer === player
             });
             player.socket.on('play', function(data){
                 if(self.isValidPlay(player, data.position)){
@@ -56,16 +54,17 @@ function Game(players){
             });
         });
 
+        this.playing = startingPlayer.opponent;
         this.nextTurn();
     };
 
     this.isValidPlay = function(player, position){
-        return this.playerTurn === player && !this.grid[position.y][position.x];
+        return this.playing === player && !this.grid[position.y][position.x];
     };
 
     this.nextTurn = function(){
-        var playerIndex = this.playerTurn === this.player1 ? 2 : 1;
-        this.playerTurn = playerIndex === 1 ? this.player1 : this.player2;
+        var playerIndex = this.playing === this.player1 ? 2 : 1;
+        this.playing = playerIndex === 1 ? this.player1 : this.player2;
         this.player1.socket.emit('turn', {turn: playerIndex});
         this.player2.socket.emit('turn', {turn: playerIndex});
     };
@@ -170,18 +169,12 @@ function Game(players){
         };
     };
 
-
-    this.player1 = players[0];
-    this.player2 = players[1];
-
-    this.start();
-
+    this._init();
 }
 
 
 function Player(nickname, socket){
-
-    this.nickname = nickname.trim();
+    nickname = nickname.trim();
     this.nickname = nickname ? (nickname.length > 10 ? nickname.substr(0, 10) + "..." : nickname) : "Player " + playerIndex++;
     this.socket = socket;
 
@@ -216,16 +209,11 @@ function searchGame(player){
 
 
 io.on('connection', function(socket){
-
-    var player;
-
     socket.emit('nickname');
 
     socket.on('join', function(nickname){
-
-        player = new Player(nickname, socket);
-
-        searchGame(player);
+        searchGame(new Player(nickname, socket));
     });
-
 });
+
+server.listen(PORT, console.log.bind(null, `tic-tac-toe started on port ${PORT}.`));
