@@ -1,34 +1,41 @@
 html, body {
     width: 100%;
     height: 100%;
+}
+
+html {
+    background: #000;
+}
+
+body {
+    position: relative;
     margin: 0;
-    padding: 0;
-    background: black;
+    font-family: Raleway, sans-serif;
     font-size: 0;
 }
 
-.center-wrapper {
-    text-align: center;
-    white-space: nowrap;
-}
-
-.center-wrapper::before {
-    content: '';
-    display: inline-block;
-    height: 100%;
-    vertical-align: middle;
-}
-
 .center {
-    text-align: center;
-    display: inline-block;
-    vertical-align: middle;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.grid-wrapper {
+    position: relative;
+    max-width: 600px;
+    width: 85vmin;
+    height: 0px;
+    padding-bottom: 100%;
 }
 
 .grid {
-    display: inline-block;
-    width: 600px;
-    height: 600px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .line {
@@ -41,10 +48,11 @@ html, body {
 }
 
 .cell {
+    position: relative;
+    display: inline-block;
     width: 33.333333333%;
     height: 100%;
-    display: inline-block;
-    position: relative;
+    box-sizing: border-box;
 }
 
 .cell:empty {
@@ -56,16 +64,14 @@ html, body {
 }
 
 .cross::before, .cross::after{
-    position: absolute;
     content: "";
-    display: block;
-    background-color: #fff;
-    left: 45%;
+    position: absolute;
     top: 10%;
+    left: 45%;
+    display: block;
     width: 10%;
     height: 80%;
-    -webkit-border-radius: 4px;
-    -moz-border-radius: 4px;
+    background-color: #fff;
     border-radius: 4px;
     opacity: 1;
 }
@@ -79,121 +85,163 @@ html, body {
 }
 
 @keyframes cross {
-
-    from {
+    0% {
         opacity: 0;
         height: 10%;
         top: 45%;
     }
 
-    to {
+    100% {
         opacity: 1;
         height: 80%;
         top: 10%;
     }
-
 }
 
 @keyframes cross1 {
-
-    to {
+    100% {
         -webkit-transform: rotate(-45deg);
         -moz-transform: rotate(-45deg);
         transform: rotate(-45deg);
     }
-
 }
 
 @keyframes cross2 {
-
-    to {
+    100% {
         -webkit-transform: rotate(45deg);
         -moz-transform: rotate(45deg);
         transform: rotate(45deg);
     }
-
 }
 
-.circle {
-    width: 50%;
-    height: 50%;
-    opacity: 1;
-    border: 20px solid white;
-    -webkit-border-radius: 50%;
-    -moz-border-radius: 50%;
-    border-radius: 50%;
+/*.circle {
     position: absolute;
     top: 15%;
     left: 15%;
+    width: 50%;
+    height: 50%;
+    border: 20px solid white;
+    border-radius: 50%;
+    opacity: 1;
+    animation: circle1 150ms forwards, circle2 300ms forwards 200ms;
+}*/
+
+.circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 70%;
+    height: 70%;
+    background: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
     animation: circle1 150ms forwards, circle2 300ms forwards 200ms;
 }
 
+.circle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 70%;
+    height: 70%;
+    background: black;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: circle3 150ms forwards, circle4 250ms forwards linear 200ms;
+}
+
 @keyframes circle1 {
-
-    from {
-        top: 42.5%;
-        left: 42.5%;
-        border-width: 0;
+    0% {
         opacity: 0;
-        width: 15%;
-        height: 15%;
+        width: 0;
+        height: 0;
     }
 
-    to {
-        top: 32.5%;
-        left: 32.5%;
-        border-width: 20px;
+    100% {
         opacity: 1;
-        width: 15%;
-        height: 15%;
+        width: 30%;
+        height: 30%;
     }
-
 }
 
 @keyframes circle2 {
+    0% {
+        width: 30%;
+        height: 30%;
+    }
 
-    from {
+    100% {
+        width: 70%;
+        height: 70%;
+    }
+}
+
+@keyframes circle3 {
+    0% {
+        width: 100%;
+        height: 100%;
+    }
+
+    100% {
+        width: 40%;
+        height: 40%;
+    }
+}
+
+@keyframes circle4 {
+    0% {
+        width: 40%;
+        height: 40%;
+    }
+
+    100% {
+        width: 70%;
+        height: 70%;
+    }
+}
+
+/*@keyframes circle2 {
+    0% {
         top: 32.5%;
         left: 32.5%;
         width: 15%;
         height: 15%;
     }
 
-    to {
+    100% {
         top: 15%;
         left: 15%;
         width: 50%;
         height: 50%;
     }
-
-}
+}*/
 
 .blink {
     animation: blink 300ms steps(2) 3;
 }
 
 @keyframes blink {
-
     50% {
         visibility: hidden;
     }
-
 }
 
 .players-bar {
     margin-top: 10px;
+    text-align: center;
 }
 
 .player-nickname, #play-again {
     color: white;
-    font: 20px "Raleway", sans-serif;
+    font-size: 20px;
     text-transform: capitalize;
     position: relative;
 }
 
 .player-nickname::after, #play-again::after {
+    content: '';
     position: absolute;
-    content: "";
     display: block;
     width: 0;
     height: 3px;
@@ -209,17 +257,15 @@ html, body {
 }
 
 @keyframes timer {
-
-    from {
+    0% {
         width: 100%;
         left: 0;
     }
 
-    to {
+    100% {
         width: 0;
         left: 50%;
     }
-
 }
 
 #player1 {

@@ -1,4 +1,5 @@
 const ms = require('ms');
+const _ = require('underscore');
 const express = require('express');
 const app = express();
 const server = require('http').createServer(app);
@@ -8,7 +9,7 @@ const PORT = process.env.port || 3004;
 
 app.use(express.static(__dirname + '/public'));
 
-app.get('/', function(req, res){
+app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public');
 });
 
@@ -16,28 +17,28 @@ app.get('/', function(req, res){
 let queue = [];
 let playerIndex = 1;
 
-function Game(players){
-
-    this._init = function() {
+class Game {
+    constructor(players) {
+        this.players = players;
         this.player1 = players[0]; this.player2 = players[1];
         this.player1.opponent = this.player2; this.player2.opponent = this.player1;
         this.grid = [[0, 0, 0], [0, 0, 0], [0, 0 ,0]];
 
         if(this.player1.startingAvantage + this.player2.startingAvantage % 2 === 0) {
-            this._start(Math.random() < 0.5 ? this.player1 : this.player2);
+            this.start(Math.random() < 0.5 ? this.player1 : this.player2);
         } else {
-            this._start(this.player1.startingAvantage ? this.player2 : this.player1);
+            this.start(this.player1.startingAvantage ? this.player2 : this.player1);
         }
     }
 
-    this._start = function(startingPlayer){
-        var self = this;
+    start(startingPlayer) {
+        const self = this;
         startingPlayer.startingAvantage = true;
         startingPlayer.opponent.startingPlayer = false;
 
-        players.forEach(function(player){
+        this.players.forEach((player) => {
             player.socket.removeAllListeners('disconnect');
-            player.socket.on('disconnect', function(){
+            player.socket.on('disconnect', () => {
                 player.opponent.socket.emit('win', {forfeit: true});
                 player.opponent.exitGame();
                 player.opponent.playAgain();
@@ -47,8 +48,8 @@ function Game(players){
                 player2: self.player2.nickname,
                 start: startingPlayer === player
             });
-            player.socket.on('play', function(data){
-                if(self.isValidPlay(player, data.position)){
+            player.socket.on('play', (data) => {
+                if(self.isValidPlay(player, data.position)) {
                     self.play(player, data.position);
                 }
             });
@@ -56,30 +57,30 @@ function Game(players){
 
         this.playing = startingPlayer.opponent;
         this.nextTurn();
-    };
+    }
 
-    this.isValidPlay = function(player, position){
+    isValidPlay(player, position) {
         return this.playing === player && !this.grid[position.y][position.x];
-    };
+    }
 
-    this.nextTurn = function(){
-        var playerIndex = this.playing === this.player1 ? 2 : 1;
+    nextTurn() {
+        const playerIndex = this.playing === this.player1 ? 2 : 1;
         this.playing = playerIndex === 1 ? this.player1 : this.player2;
         this.player1.socket.emit('turn', {turn: playerIndex});
         this.player2.socket.emit('turn', {turn: playerIndex});
-    };
+    }
 
-    this.play = function(player, position){
-        var playerIndex = player === this.player1 ? 1 : 2;
+    play(player, position) {
+        const playerIndex = player === this.player1 ? 1 : 2;
         this.grid[position.y][position.x] = playerIndex;
         this.player1.socket.emit('play', {position: position, player: playerIndex});
         this.player2.socket.emit('play', {position: position, player: playerIndex});
 
-        var gameStatus = this.gameStatus();
-        if(!gameStatus.over){
+        const gameStatus = this.gameStatus();
+        if(!gameStatus.over) {
             this.nextTurn();
-        }else{
-            switch(gameStatus.player){
+        } else {
+            switch(gameStatus.player) {
                 case 1:
                     this.player1.socket.emit('win', {positions: gameStatus.positions});
                     this.player2.socket.emit('lose', {positions: gameStatus.positions});
@@ -89,40 +90,40 @@ function Game(players){
                     this.player2.socket.emit('win', {positions: gameStatus.positions});
                     break;
                 default:
-                    this.player1.socket.emit('tie', {});
-                    this.player2.socket.emit('tie', {});
+                    this.player1.socket.emit('tie');
+                    this.player2.socket.emit('tie');
                     break;
             }
 
-            players.forEach(function(player){
+            this.players.forEach((player) => {
                 player.exitGame();
                 player.playAgain();
             });
         }
-    };
+    }
 
-    this.gameStatus = function(){
-        for(var i = 0 ; i < 3 ; i++){
-            if(this.grid[i][0] === 1 && this.grid[i][1] === 1 && this.grid[i][2] === 1){
+    gameStatus() {
+        for(let i = 0 ; i < 3 ; i++) {
+            if(this.grid[i][0] === 1 && this.grid[i][1] === 1 && this.grid[i][2] === 1) {
                 return {
                     over: true,
                     player: 1,
                     positions: [{x: 0, y: i}, {x: 1, y: i}, {x: 2, y: i}]
                 };
-            }else if(this.grid[i][0] === 2 && this.grid[i][1] === 2 && this.grid[i][2] === 2){
+            } else if(this.grid[i][0] === 2 && this.grid[i][1] === 2 && this.grid[i][2] === 2) {
                 return {
                     over: true,
                     player: 2,
                     positions: [{x: 0, y: i}, {x: 1, y: i}, {x: 2, y: i}]
                 };
             }
-            if(this.grid[0][i] === 1 && this.grid[1][i] === 1 && this.grid[2][i] === 1){
+            if(this.grid[0][i] === 1 && this.grid[1][i] === 1 && this.grid[2][i] === 1) {
                 return {
                     over: true,
                     player: 1,
                     positions: [{x: i, y: 0}, {x: i, y: 1}, {x: i, y: 2}]
                 };
-            }else if(this.grid[0][i] === 2 && this.grid[1][i] === 2 && this.grid[2][i] === 2){
+            } else if(this.grid[0][i] === 2 && this.grid[1][i] === 2 && this.grid[2][i] === 2) {
                 return {
                     over: true,
                     player: 2,
@@ -130,88 +131,93 @@ function Game(players){
                 };
             }
         }
-        if(this.grid[0][0] === 1 && this.grid[1][1] === 1 && this.grid[2][2] === 1){
+        if(this.grid[0][0] === 1 && this.grid[1][1] === 1 && this.grid[2][2] === 1) {
             return {
                 over: true,
                 player: 1,
                 positions: [{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 2}]
             };
-        }else if(this.grid[0][0] === 2 && this.grid[1][1] === 2 && this.grid[2][2] === 2){
+        } else if(this.grid[0][0] === 2 && this.grid[1][1] === 2 && this.grid[2][2] === 2) {
             return {
                 over: true,
                 player: 2,
                 positions: [{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 2}]
             };
         }
-        if(this.grid[0][2] === 1 && this.grid[1][1] === 1 && this.grid[2][0] === 1){
+        if(this.grid[0][2] === 1 && this.grid[1][1] === 1 && this.grid[2][0] === 1) {
             return {
                 over: true,
                 player: 1,
                 positions: [{x: 2, y: 0}, {x: 1, y: 1}, {x: 0, y: 2}]
             };
-        }else if(this.grid[0][2] === 2 && this.grid[1][1] === 2 && this.grid[2][0] === 2){
+        } else if(this.grid[0][2] === 2 && this.grid[1][1] === 2 && this.grid[2][0] === 2) {
             return {
                 over: true,
                 player: 2,
                 positions: [{x: 2, y: 0}, {x: 1, y: 1}, {x: 0, y: 2}]
             };
         }
-        for(var i = 0 ; i < 3 ; i++){
-            for(var j = 0 ; j < 3 ; j++){
-                if(!this.grid[i][j]){
+        for(let i = 0 ; i < 3 ; i++) {
+            for(let j = 0 ; j < 3 ; j++) {
+                if(!this.grid[i][j]) {
                     return {over: false};
                 }
             }
         }
         return {
             over: true,
-            player: "tie"
+            player: 'tie'
         };
-    };
-
-    this._init();
+    }
 }
 
-
-function Player(nickname, socket){
-    nickname = nickname.trim();
-    this.nickname = nickname ? (nickname.length > 10 ? nickname.substr(0, 10) + "..." : nickname) : "Player " + playerIndex++;
-    this.socket = socket;
-
-    this.playAgain = function(){
-        var self = this;
-        socket.on('play-again', function(){
-            socket.removeAllListeners('play-again');
-            searchGame(self);
-        });
-    };
-
-    this.exitGame = function(){
-        socket.removeAllListeners('disconnect');
-        socket.removeAllListeners('play');
+class Player {
+    constructor(nickname, socket) {
+        if(_.isString(nickname)) {
+            nickname = nickname.trim();
+            if(nickname.length) {
+                this.nickname = nickname.length > 10 ? nickname.substr(0, 10) + '...' : nickname;
+            } else {
+                this.nickname = 'Player ' + playerIndex++;
+            }
+        } else {
+            this.nickname = 'Player ' + playerIndex++;
+        }
+        this.socket = socket;
     }
 
+    playAgain() {
+        const self = this;
+        this.socket.on('play-again', () => {
+            self.socket.removeAllListeners('play-again');
+            searchGame(self);
+        });
+    }
+
+    exitGame() {
+        this.socket.removeAllListeners('disconnect');
+        this.socket.removeAllListeners('play');
+    }
 }
 
-function searchGame(player){
-
+function searchGame(player) {
     queue.push(player);
 
-    if(queue.length === 1){
+    if(queue.length === 1) {
         player.socket.emit('queue');
-        player.socket.on('disconnect', function(){
+        player.socket.on('disconnect', () => {
             queue.splice(queue.indexOf(player), 1);
         });
-    }else{
+    } else {
         new Game(queue.splice(0, 2));
     }
 }
 
 
-io.on('connection', function(socket){
+io.on('connection', (socket) => {
     socket.emit('nickname');
 
-    socket.on('join', function(nickname){
+    socket.on('join', (nickname) => {
         searchGame(new Player(nickname, socket));
     });
 });
