@@ -2,33 +2,34 @@
 const path = require('path');
 const _ = require('underscore');
 const ms = require('ms');
+const http = require('http');
 const express = require('express');
 const app = express();
-const server = require('http').createServer(app);
+const server = http.createServer(app);
 const io = require('socket.io')(server, {'pingTimeout': ms('2s'), 'pingInterval': ms('2s')});
 
+// Web Server & Routing
 const PORT = process.env.port || 3004;
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
+app.use(/\/(?:[1-9]\d*)?/, express.static('public'));
 
-app.get(/\/([1-9]\d+)?/, (req, res) => {
-     res.sendFile(__dirname + '/public');
-});
-
-// Setup
+// Game Setup
 const DEFAULT_GAME_SIZE = 3;
+const MIN_GAME_SIZE = 3;
+const MAX_GAME_SIZE = 10;
 
-// Game
-let queue = [];
+// Game data
+let queues = [];
 let playerIndex = 1;
 
 class Game {
     constructor(size, players) {
-        this.size = size;
+        this.grid = new Grid(size);
         this.players = players;
         this.player1 = players[0]; this.player2 = players[1];
         this.player1.opponent = this.player2; this.player2.opponent = this.player1;
-        this.grid = [[0, 0, 0], [0, 0, 0], [0, 0 ,0]];
+        this.player1.gridValue = 1; this.player2.gridValue = -1;
 
         if(this.player1.startingAvantage + this.player2.startingAvantage % 2 === 0) {
             this.start(Math.random() < 0.5 ? this.player1 : this.player2);
@@ -55,9 +56,7 @@ class Game {
                 start: startingPlayer === player
             });
             player.socket.on('play', (data) => {
-                if(self.isValidPlay(player, data.position)) {
-                    self.play(player, data.position);
-                }
+                if(self.playing === player) self.play(player, data.position);
             });
         });
 
@@ -77,108 +76,84 @@ class Game {
     }
 
     play(player, position) {
+        if(!this.grid.setCellIfValid(position.x, position.y, player.gridValue)) return;
+
         const playerIndex = player === this.player1 ? 1 : 2;
-        this.grid[position.y][position.x] = playerIndex;
-        this.player1.socket.emit('play', {position: position, player: playerIndex});
-        this.player2.socket.emit('play', {position: position, player: playerIndex});
+        this.players.forEach((player) => {
+            player.socket.emit('play', {position: position, player: playerIndex});
+        });
 
-        const gameStatus = this.gameStatus();
-        if(!gameStatus.over) {
-            this.nextTurn();
-        } else {
-            switch(gameStatus.player) {
-                case 1:
-                    this.player1.socket.emit('win', {positions: gameStatus.positions});
-                    this.player2.socket.emit('lose', {positions: gameStatus.positions});
-                    break;
-                case 2:
-                    this.player1.socket.emit('lose', {positions: gameStatus.positions});
-                    this.player2.socket.emit('win', {positions: gameStatus.positions});
-                    break;
-                default:
-                    this.player1.socket.emit('tie');
-                    this.player2.socket.emit('tie');
-                    break;
-            }
+        let ending = false;
+        if(this.grid.isWin(position.x, position.y)) {
+            ending = true;
+            player.socket.emit('win', {positions: []});
+            player.opponent.socket.emit('lose', {positions: []});
+        } else if(this.grid.isTie()) {
+            ending = true;
+            this.players.forEach((player) => {
+                player.socket.emit('tie');
+            });
+        }
 
+        if(ending) {
             this.players.forEach((player) => {
                 player.exitGame();
                 player.playAgain();
             });
+        } else {
+            this.nextTurn();
+        }
+    }
+}
+
+class Grid {
+    constructor(size) {
+        this.size = size;
+
+        this.data = new Array(size);
+        this.horizontalCounter = [];
+        this.verticalCounter = [];
+        this.diagonalsCounter   = [0, 0];
+        for(let i = 0; i < size; i++) {
+            this.data[i] = (new Array(size)).fill(0);
+            this.horizontalCounter[i] = {sum: 0, filled: 0};
+            this.verticalCounter[i] = {sum: 0, filled: 0};
         }
     }
 
-    gameStatus() {
-        for(let i = 0 ; i < 3 ; i++) {
-            if(this.grid[i][0] === 1 && this.grid[i][1] === 1 && this.grid[i][2] === 1) {
-                return {
-                    over: true,
-                    player: 1,
-                    positions: [{x: 0, y: i}, {x: 1, y: i}, {x: 2, y: i}]
-                };
-            } else if(this.grid[i][0] === 2 && this.grid[i][1] === 2 && this.grid[i][2] === 2) {
-                return {
-                    over: true,
-                    player: 2,
-                    positions: [{x: 0, y: i}, {x: 1, y: i}, {x: 2, y: i}]
-                };
+    setCellIfValid(x, y, value) {
+        if(x >= 0 && x < this.size && y >= 0 && y < this.size && !this.data[y][x]) {
+            this.data[y][x] = value;
+            this.horizontalCounter[x].sum += value;
+            this.horizontalCounter[x].filled++;
+            this.verticalCounter[y].sum += value;
+            this.verticalCounter[y].filled++;
+            if(x === y) {
+                this.diagonalsCounter[0] += value;
+            } else if(this.size - 1 - x === y) {
+                this.diagonalsCounter[1] += value;
             }
-            if(this.grid[0][i] === 1 && this.grid[1][i] === 1 && this.grid[2][i] === 1) {
-                return {
-                    over: true,
-                    player: 1,
-                    positions: [{x: i, y: 0}, {x: i, y: 1}, {x: i, y: 2}]
-                };
-            } else if(this.grid[0][i] === 2 && this.grid[1][i] === 2 && this.grid[2][i] === 2) {
-                return {
-                    over: true,
-                    player: 2,
-                    positions: [{x: i, y: 0}, {x: i, y: 1}, {x: i, y: 2}]
-                };
-            }
+            return true;
+        } else {
+            return false;
         }
-        if(this.grid[0][0] === 1 && this.grid[1][1] === 1 && this.grid[2][2] === 1) {
-            return {
-                over: true,
-                player: 1,
-                positions: [{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 2}]
-            };
-        } else if(this.grid[0][0] === 2 && this.grid[1][1] === 2 && this.grid[2][2] === 2) {
-            return {
-                over: true,
-                player: 2,
-                positions: [{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 2}]
-            };
-        }
-        if(this.grid[0][2] === 1 && this.grid[1][1] === 1 && this.grid[2][0] === 1) {
-            return {
-                over: true,
-                player: 1,
-                positions: [{x: 2, y: 0}, {x: 1, y: 1}, {x: 0, y: 2}]
-            };
-        } else if(this.grid[0][2] === 2 && this.grid[1][1] === 2 && this.grid[2][0] === 2) {
-            return {
-                over: true,
-                player: 2,
-                positions: [{x: 2, y: 0}, {x: 1, y: 1}, {x: 0, y: 2}]
-            };
-        }
-        for(let i = 0 ; i < 3 ; i++) {
-            for(let j = 0 ; j < 3 ; j++) {
-                if(!this.grid[i][j]) {
-                    return {over: false};
-                }
-            }
-        }
-        return {
-            over: true,
-            player: 'tie'
-        };
+    }
+
+    isWin(x, y) {
+        if(Math.abs(this.horizontalCounter[x].sum) === this.size) return true;
+        if(Math.abs(this.verticalCounter[y].sum) === this.size) return true;
+        if(Math.abs(this.diagonalsCounter[0]) === this.size) return true;
+        if(Math.abs(this.diagonalsCounter[1]) === this.size) return true;
+        return false;
+    }
+
+    isTie() {
+        return this.horizontalCounter.every((counter) => counter.filled === this.size);
     }
 }
 
 class Player {
-    constructor(nickname, socket) {
+    constructor(socket, nickname, preferedSize) {
         if(_.isString(nickname)) {
             nickname = nickname.trim();
             if(nickname.length) {
@@ -190,6 +165,7 @@ class Player {
             this.nickname = 'Player ' + playerIndex++;
         }
         this.socket = socket;
+        this.preferedSize = preferedSize;
     }
 
     playAgain() {
@@ -207,24 +183,37 @@ class Player {
 }
 
 function searchGame(player) {
-    queue.push(player);
+    let queue;
+    if(queues[player.preferedSize]) {
+        queue = queues[player.preferedSize];
+    } else {
+        queue = [];
+        queues[player.preferedSize] = queue;
+    }
 
+    queue.push(player);
     if(queue.length === 1) {
         player.socket.emit('queue');
         player.socket.on('disconnect', () => {
             queue.splice(queue.indexOf(player), 1);
         });
     } else {
-        new Game(queue.splice(0, 2));
+        new Game(player.preferedSize, queue.splice(0, 2));
     }
 }
 
 
 io.on('connection', (socket) => {
-    socket.emit('nickname');
+    socket.emit('setup', {default: DEFAULT_GAME_SIZE, min: MIN_GAME_SIZE, max: MAX_GAME_SIZE});
 
     socket.on('join', (data) => {
-        searchGame(data.size || DEFAULT_GAME_SIZE, new Player(data.nickname, socket));
+        let preferedSize;
+        if(data.size && _.isNumber(data.size)) {
+            preferedSize = data.size <= MIN_GAME_SIZE ? MIN_GAME_SIZE : data.size >= MAX_GAME_SIZE ? MAX_GAME_SIZE : data.size;
+        } else {
+            preferedSize = DEFAULT_GAME_SIZE;
+        }
+        searchGame(new Player(socket, data.nickname, preferedSize));
     });
 });
 

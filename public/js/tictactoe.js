@@ -1,5 +1,15 @@
 $(function() {
-    console.log(window.location.pathname);
+    var size = Number(window.location.pathname.split('/')[1]);
+
+    function drawGrid() {
+        for(var y = 0; y < size; y++) {
+            var $line = $('<div></div>').addClass('line');
+            for(var x = 0; x < size; x++) {
+                $('<div></div>').addClass('cell').appendTo($line);
+            }
+            $('.grid').append($line);
+        }
+    }
 
     const $queueAnimation = $('<div></div>').addClass('queue');
     $('<div></div>').addClass('dot1').appendTo($queueAnimation);
@@ -7,13 +17,17 @@ $(function() {
 
     const socket = io();
 
-    socket.on('nickname', function() {
+    socket.on('setup', function(data) {
+        if(size) size = size <= data.min ? data.min : size >= data.max ? data.max : size;
+        else size = data.default;
+        drawGrid();
+
         swal({
             title: 'Nickname',
             content: 'input'
         })
         .then(function(nickname) {
-            socket.emit('join', {size: 3, nickname: nickname});
+            socket.emit('join', {size: size, nickname: nickname});
         });
     })
     .on('queue', function() {
@@ -41,8 +55,8 @@ $(function() {
         $('.player-nickname').removeClass('player-turn');
         $('#player' + data.turn).addClass('player-turn');
     })
-    .on('play', function(data){
-        $('.cell').eq(data.position.y * 3 + data.position.x)
+    .on('play', function(data) {
+        $('.cell').eq(data.position.y * size + data.position.x)
         .append($('<div></div>')
         .addClass(data.player === 1 ? 'cross' : 'circle'));
     })
@@ -75,14 +89,13 @@ $(function() {
                 break;
         }
         if(swalDelay) {
-            setTimeout(function(){
-                data.positions.forEach(function(position){
-                    position = position.y * 3 + position.x;
-                    $('#' + position).children().addClass('blink');
+            setTimeout(function() {
+                data.positions.forEach(function(position) {
+                    $('.line').eq(position.y).children().eq(position.x).children().addClass('blink');
                 });
             }, 600);
         }
-        setTimeout(function(){
+        setTimeout(function() {
             swal({
                 title: title,
                 text: description,
@@ -97,13 +110,8 @@ $(function() {
         }, swalDelay || 0);
     }
 
-    $('.cell').click(function(){
-        const id = $(this).attr('id') * 1;
-        const position = {
-            x: id % 3,
-            y: Math.floor(id / 3)
-        };
-        socket.emit('play', {position: position});
+    $('.cell').click(function() {
+        socket.emit('play', {position: {x: $(this).index(), y: $(this).parent().index()}});
     });
 
     $('#play-again').click(function() {
