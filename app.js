@@ -1,5 +1,7 @@
-const ms = require('ms');
+// Moduls
+const path = require('path');
 const _ = require('underscore');
+const ms = require('ms');
 const express = require('express');
 const app = express();
 const server = require('http').createServer(app);
@@ -7,18 +9,22 @@ const io = require('socket.io')(server, {'pingTimeout': ms('2s'), 'pingInterval'
 
 const PORT = process.env.port || 3004;
 
-app.use(express.static(__dirname + '/public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/public');
+app.get(/\/([1-9]\d+)?/, (req, res) => {
+     res.sendFile(__dirname + '/public');
 });
+
+// Setup
+const DEFAULT_GAME_SIZE = 3;
 
 // Game
 let queue = [];
 let playerIndex = 1;
 
 class Game {
-    constructor(players) {
+    constructor(size, players) {
+        this.size = size;
         this.players = players;
         this.player1 = players[0]; this.player2 = players[1];
         this.player1.opponent = this.player2; this.player2.opponent = this.player1;
@@ -217,8 +223,8 @@ function searchGame(player) {
 io.on('connection', (socket) => {
     socket.emit('nickname');
 
-    socket.on('join', (nickname) => {
-        searchGame(new Player(nickname, socket));
+    socket.on('join', (data) => {
+        searchGame(data.size || DEFAULT_GAME_SIZE, new Player(data.nickname, socket));
     });
 });
 

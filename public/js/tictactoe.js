@@ -1,4 +1,6 @@
 $(function() {
+    console.log(window.location.pathname);
+
     const $queueAnimation = $('<div></div>').addClass('queue');
     $('<div></div>').addClass('dot1').appendTo($queueAnimation);
     $('<div></div>').addClass('dot2').appendTo($queueAnimation);
@@ -10,8 +12,8 @@ $(function() {
             title: 'Nickname',
             content: 'input'
         })
-        .then(function(result) {
-            socket.emit('join', result)
+        .then(function(nickname) {
+            socket.emit('join', {size: 3, nickname: nickname});
         });
     })
     .on('queue', function() {
