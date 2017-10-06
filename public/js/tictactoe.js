@@ -2,12 +2,11 @@ $(function() {
     var size = Number(window.location.pathname.split('/')[1]);
 
     function drawGrid() {
+        const $grid = $('.grid').empty();
         for(var y = 0; y < size; y++) {
             var $line = $('<div></div>').addClass('line');
-            for(var x = 0; x < size; x++) {
-                $('<div></div>').addClass('cell').appendTo($line);
-            }
-            $('.grid').append($line);
+            for(var x = 0; x < size; x++) $('<div></div>').addClass('cell').appendTo($line);
+            $grid.append($line);
         }
     }
 
@@ -20,7 +19,6 @@ $(function() {
     socket.on('setup', function(data) {
         if(size) size = size <= data.min ? data.min : size >= data.max ? data.max : size;
         else size = data.default;
-        drawGrid();
 
         swal({
             title: 'Nickname',
@@ -31,6 +29,7 @@ $(function() {
         });
     })
     .on('queue', function() {
+        $('.grid').empty();
         swal({
             title: 'Queued',
             text: 'Waiting for another player',
@@ -41,9 +40,10 @@ $(function() {
         });
     })
     .on('start', function(data) {
+        drawGrid();
         $('#player1').text(data.player1);
         $('#player2').text(data.player2);
-        $('.cell').empty();
+        // $('.cell').empty();
         swal({
             title: 'Game found',
             //text: data.player1 + ' vs ' + data.player2 + '\n\n' + (data.start ? 'You start' : 'Your opponent starts'),
@@ -75,7 +75,7 @@ $(function() {
         switch(status) {
             case 'win':
                 title = 'You won';
-                description = 'Congrats';
+                description = !data.forfeit ? 'Congrats' : 'Your opponent left the game';
                 swalDelay = !data.forfeit ? 1500 : 0;
                 break;
             case 'lose':

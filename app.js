@@ -31,7 +31,7 @@ class Game {
         this.player1.opponent = this.player2; this.player2.opponent = this.player1;
         this.player1.gridValue = 1; this.player2.gridValue = -1;
 
-        if(this.player1.startingAvantage + this.player2.startingAvantage % 2 === 0) {
+        if((this.player1.startingAvantage + this.player2.startingAvantage) % 2 === 0) {
             this.start(Math.random() < 0.5 ? this.player1 : this.player2);
         } else {
             this.start(this.player1.startingAvantage ? this.player2 : this.player1);
@@ -60,12 +60,9 @@ class Game {
             });
         });
 
+        // Reverse once to call nextTurn afterwards.
         this.playing = startingPlayer.opponent;
         this.nextTurn();
-    }
-
-    isValidPlay(player, position) {
-        return this.playing === player && !this.grid[position.y][position.x];
     }
 
     nextTurn() {
