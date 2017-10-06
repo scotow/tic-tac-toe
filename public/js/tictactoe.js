@@ -110,7 +110,7 @@ $(function() {
         }, swalDelay || 0);
     }
 
-    $('.cell').click(function() {
+    $('.grid').on('click', '.cell', function() {
         socket.emit('play', {position: {x: $(this).index(), y: $(this).parent().index()}});
     });
 
