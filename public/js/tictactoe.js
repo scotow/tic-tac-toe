@@ -60,15 +60,9 @@ $(function() {
         .append($('<div></div>')
         .addClass(data.player === 1 ? 'cross' : 'circle'));
     })
-    .on('win', function(data) {
-        handleEndOfGame('win', data);
-    })
-    .on('lose', function(data) {
-        handleEndOfGame('lose', data);
-    })
-    .on('tie', function() {
-        handleEndOfGame('tie')
-    });
+    .on('win', handleEndOfGame.bind(null, 'win')
+    .on('lose', handleEndOfGame.bind(null, 'lose')
+    .on('tie', handleEndOfGame.bind(null, 'tie');
 
     function handleEndOfGame(status, data) {
         var title, description, swalDelay;
