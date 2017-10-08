@@ -208,33 +208,94 @@ body {
     }
 }
 
-.players-bar {
-    margin-top: 10px;
-    text-align: center;
+/*Top & bottom bar */
+.bar {
+    display: flex;
+    margin: 10px 0;
 }
 
-.player-nickname, #play-again {
-    color: white;
-    font-size: 20px;
-    text-transform: capitalize;
+.bar > .item {
+    display: none;
     position: relative;
 }
 
-.player-nickname::after, #play-again::after {
-    content: '';
-    position: absolute;
-    display: block;
-    width: 0;
-    height: 3px;
-    background: white;
-    bottom: -8px;
-    transition: 500ms;
-    left: 50%;
+.bar > .item > .label {
+    color: #fff;
 }
 
-.player-turn::after, #play-again:hover::after {
+.top-bar {
+    justify-content: center;
+}
+
+.top-bar > .item > .label {
+    font-size: 30px;
+}
+
+.bottom-bar {
+    justify-content: space-between;
+}
+
+.bottom-bar > .item > .label {
+    font-size: 20px;
+    text-transform: capitalize;
+}
+
+.bar > .item > .under-bar {
+    position: absolute;
+    bottom: -8px;
+    bottom: -5px;
     width: 100%;
-    left: 0;
+    height: 3px;
+    background: #fff;
+    transform-origin: center;
+    transform: scaleX(0);
+    transition: transform 500ms;
+}
+
+.bottom-bar > .player.playing > .under-bar,
+.bar > #play-again:hover > .under-bar {
+    transform: scaleY(1);
+}
+
+.bottom-bar > .player {
+    display: none;
+}
+
+#player1::before,
+#player1::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -18px;
+    height: 18px;
+    width: 3px;
+    background-color: #fff;
+    border-radius: 1px;
+}
+
+#player1::before {
+    transform: translateY(-50%) rotate(-45deg);
+}
+
+#player1::after {
+    transform: translateY(-50%) rotate(45deg);
+}
+
+#player2::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -28px;
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    border: 3px solid white;
+    transform: translateY(-50%);
+}
+
+#play-again {
+    display: none;
+    cursor: pointer;
 }
 
 @keyframes timer {
@@ -247,17 +308,4 @@ body {
         width: 0;
         left: 50%;
     }
-}
-
-#player1 {
-    float: left;
-}
-
-#player2 {
-    float: right;
-}
-
-#play-again {
-    display: none;
-    cursor: pointer;
 }

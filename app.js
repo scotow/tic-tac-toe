@@ -16,9 +16,17 @@ app.use(express.static('public'));
 app.use(/\/(?:[1-9]\d*)?/, express.static('public'));
 
 // Game Setup
-const DEFAULT_GAME_SIZE = 3;
-const MIN_GAME_SIZE = 3;
-const MAX_GAME_SIZE = 10;
+const GAME_SIZE = {
+    DEFAULT: 3,
+    MIN: 3,
+    MAX: 10
+};
+
+const AXIS = {
+    HORIZONTAL  : 1 << 0,
+    VERTICAL    : 1 << 1,
+    DIAGONAL    : 1 << 2
+};
 
 // Game data
 let queues = [];
@@ -46,10 +54,9 @@ class Game {
 
         this.players.forEach((player) => {
             player.socket.removeAllListeners('disconnect');
-            player.socket.on('disconnect', () => {
+            player.socket.once('disconnect', () => {
                 player.opponent.socket.emit('win', {forfeit: true});
                 player.opponent.exitGame();
-                player.opponent.playAgain();
             });
             player.socket.emit('start', {
                 player1: self.player1.nickname,
@@ -82,10 +89,11 @@ class Game {
         });
 
         let ending = false;
-        if(this.grid.isWin(position.x, position.y)) {
+        const lines = this.grid.winLines(position.x, position.y);
+        if(lines.length) {
             ending = true;
-            player.socket.emit('win', {positions: []});
-            player.opponent.socket.emit('lose', {positions: []});
+            player.socket.emit('win', {lines: lines});
+            player.opponent.socket.emit('lose', {lines: lines});
         } else if(this.grid.isTie()) {
             ending = true;
             this.players.forEach((player) => {
@@ -96,7 +104,6 @@ class Game {
         if(ending) {
             this.players.forEach((player) => {
                 player.exitGame();
-                player.playAgain();
             });
         } else {
             this.nextTurn();
@@ -137,12 +144,13 @@ class Grid {
         }
     }
 
-    isWin(x, y) {
-        if(Math.abs(this.horizontalCounter[x].sum) === this.size) return true;
-        if(Math.abs(this.verticalCounter[y].sum) === this.size) return true;
-        if(Math.abs(this.diagonalsCounter[0]) === this.size) return true;
-        if(Math.abs(this.diagonalsCounter[1]) === this.size) return true;
-        return false;
+    winLines(x, y) {
+        const lines = [];
+        if(Math.abs(this.horizontalCounter[x].sum) === this.size) lines.push({axis: AXIS.HORIZONTAL, index: x});
+        if(Math.abs(this.verticalCounter[y].sum) === this.size) lines.push({axis: AXIS.VERTICAL, index: y});
+        if(Math.abs(this.diagonalsCounter[0]) === this.size) lines.push({axis: AXIS.DIAGONAL, index: 0});
+        if(Math.abs(this.diagonalsCounter[1]) === this.size) lines.push({axis: AXIS.DIAGONAL, index: 1});
+        return lines;
     }
 
     isTie() {
@@ -164,19 +172,17 @@ class Player {
         }
         this.socket = socket;
         this.preferedSize = preferedSize;
-    }
-
-    playAgain() {
-        const self = this;
-        this.socket.on('play-again', () => {
-            self.socket.removeAllListeners('play-again');
-            searchGame(self);
-        });
+        this.startingAvantage = false;
     }
 
     exitGame() {
+        const self = this;
         this.socket.removeAllListeners('disconnect');
         this.socket.removeAllListeners('play');
+        this.socket.once('play-again', () => {
+            // self.socket.removeAllListeners('play-again');
+            searchGame(self);
+        });
     }
 }
 
@@ -192,7 +198,7 @@ function searchGame(player) {
     queue.push(player);
     if(queue.length === 1) {
         player.socket.emit('queue');
-        player.socket.on('disconnect', () => {
+        player.socket.once('disconnect', () => {
             queue.splice(queue.indexOf(player), 1);
         });
     } else {
@@ -202,14 +208,14 @@ function searchGame(player) {
 
 
 io.on('connection', (socket) => {
-    socket.emit('setup', {default: DEFAULT_GAME_SIZE, min: MIN_GAME_SIZE, max: MAX_GAME_SIZE});
+    socket.emit('setup', {size: GAME_SIZE, axis: AXIS});
 
-    socket.on('join', (data) => {
+    socket.once('join', (data) => {
         let preferedSize;
         if(data.size && _.isNumber(data.size)) {
-            preferedSize = data.size <= MIN_GAME_SIZE ? MIN_GAME_SIZE : data.size >= MAX_GAME_SIZE ? MAX_GAME_SIZE : data.size;
+            preferedSize = data.size <= GAME_SIZE.MIN ? GAME_SIZE.MIN : data.size >= GAME_SIZE.MAX ? GAME_SIZE.MAX : data.size;
         } else {
-            preferedSize = DEFAULT_GAME_SIZE;
+            preferedSize = GAME_SIZE.DEFAULT;
         }
         searchGame(new Player(socket, data.nickname, preferedSize));
     });
