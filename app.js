@@ -1,233 +1,226 @@
+#!/usr/bin/env node
+
+// Moduls
+const path = require('path');
+const _ = require('underscore');
+const ms = require('ms');
+
+const http = require('http');
 const express = require('express');
 const app = express();
-const http = require('http').Server(app);
-const io = require('socket.io')(http, {'pingTimeout': 4000, 'pingInterval': 2000});
+const server = http.createServer(app);
+const io = require('socket.io')(server, {'pingTimeout': ms('2s'), 'pingInterval': ms('2s')});
 
+// Web Server & Routing
 const PORT = process.env.port || 3004;
 
-app.use(express.static(__dirname + '/public'));
+app.use(express.static('public'));
+app.use(/\/(?:[1-9]\d*)?/, express.static('public'));
 
-app.get('/', function(req, res){
-    res.sendFile(__dirname + '/public/index.html');
-});
+// Game Setup
+const GAME_SIZE = {
+    DEFAULT: 3,
+    MIN: 3,
+    MAX: 10
+};
 
-http.listen(PORT, function(){
-    console.log(`Tic-Tac-Toe started on port ${PORT}.`);
-});
+const AXIS = {
+    HORIZONTAL  : 1 << 0,
+    VERTICAL    : 1 << 1,
+    DIAGONAL    : 1 << 2
+};
 
+// Game data
+let queues = [];
+let playerIndex = 1;
 
-var queue = [];
+class Game {
+    constructor(size, players) {
+        this.grid = new Grid(size);
+        this.players = players;
+        this.player1 = players[0]; this.player2 = players[1];
+        this.player1.opponent = this.player2; this.player2.opponent = this.player1;
+        this.player1.gridValue = 1; this.player2.gridValue = -1;
 
-var playerIndex = 1;
+        if((this.player1.startingAvantage + this.player2.startingAvantage) % 2 === 0) {
+            this.start(Math.random() < 0.5 ? this.player1 : this.player2);
+        } else {
+            this.start(this.player1.startingAvantage ? this.player2 : this.player1);
+        }
+    }
 
+    start(startingPlayer) {
+        const self = this;
+        startingPlayer.startingAvantage = true;
+        startingPlayer.opponent.startingPlayer = false;
 
-function Game(players){
-
-    this.start = function(){
-
-        var self = this;
-
-        this.player1.socket.removeAllListeners('disconnect');
-        this.player1.socket.on('disconnect', function(){
-            self.player2.socket.emit('win', {forfeit: true});
-            self.player2.exitGame();
-            self.player2.playAgain();
-        });
-        this.player2.socket.removeAllListeners('disconnect');
-        this.player2.socket.on('disconnect', function(){
-            self.player1.socket.emit('win', {forfeit: true});
-            self.player1.exitGame();
-            self.player1.playAgain();
-        });
-
-
-        this.grid = [[0, 0, 0], [0, 0, 0], [0, 0 ,0]];
-
-        this.playerTurn = Math.random() < 0.5 ? this.player1 : this.player2;
-
-        players.forEach(function(player){
+        this.players.forEach((player) => {
+            player.socket.removeAllListeners('disconnect');
+            player.socket.once('disconnect', () => {
+                player.opponent.socket.emit('win', {forfeit: true});
+                player.opponent.exitGame();
+            });
             player.socket.emit('start', {
                 player1: self.player1.nickname,
                 player2: self.player2.nickname,
-                start: self.playerTurn !== player
+                start: startingPlayer === player
             });
-            player.socket.on('play', function(data){
-                if(self.isValidPlay(player, data.position)){
-                    self.play(player, data.position);
-                }
+            player.socket.on('play', (data) => {
+                if(self.playing === player) self.play(player, data.position);
             });
         });
 
+        // Reverse once to call nextTurn afterwards.
+        this.playing = startingPlayer.opponent;
         this.nextTurn();
-    };
+    }
 
-    this.isValidPlay = function(player, position){
-        return this.playerTurn === player && !this.grid[position.y][position.x];
-    };
-
-    this.nextTurn = function(){
-        var playerIndex = this.playerTurn === this.player1 ? 2 : 1;
-        this.playerTurn = playerIndex === 1 ? this.player1 : this.player2;
+    nextTurn() {
+        const playerIndex = this.playing === this.player1 ? 2 : 1;
+        this.playing = playerIndex === 1 ? this.player1 : this.player2;
         this.player1.socket.emit('turn', {turn: playerIndex});
         this.player2.socket.emit('turn', {turn: playerIndex});
-    };
+    }
 
-    this.play = function(player, position){
-        var playerIndex = player === this.player1 ? 1 : 2;
-        this.grid[position.y][position.x] = playerIndex;
-        this.player1.socket.emit('play', {position: position, player: playerIndex});
-        this.player2.socket.emit('play', {position: position, player: playerIndex});
+    play(player, position) {
+        if(!this.grid.setCellIfValid(position.x, position.y, player.gridValue)) return;
 
-        var gameStatus = this.gameStatus();
-        if(!gameStatus.over){
-            this.nextTurn();
-        }else{
-            switch(gameStatus.player){
-                case 1:
-                    this.player1.socket.emit('win', {positions: gameStatus.positions});
-                    this.player2.socket.emit('lose', {positions: gameStatus.positions});
-                    break;
-                case 2:
-                    this.player1.socket.emit('lose', {positions: gameStatus.positions});
-                    this.player2.socket.emit('win', {positions: gameStatus.positions});
-                    break;
-                default:
-                    this.player1.socket.emit('tie', {});
-                    this.player2.socket.emit('tie', {});
-                    break;
-            }
+        const playerIndex = player === this.player1 ? 1 : 2;
+        this.players.forEach((player) => {
+            player.socket.emit('play', {position: position, player: playerIndex});
+        });
 
-            players.forEach(function(player){
-                player.exitGame();
-                player.playAgain();
+        let ending = false;
+        const lines = this.grid.winLines(position.x, position.y);
+        if(lines.length) {
+            ending = true;
+            player.socket.emit('win', {lines: lines});
+            player.opponent.socket.emit('lose', {lines: lines});
+        } else if(this.grid.isTie()) {
+            ending = true;
+            this.players.forEach((player) => {
+                player.socket.emit('tie');
             });
         }
-    };
 
-    this.gameStatus = function(){
-        for(var i = 0 ; i < 3 ; i++){
-            if(this.grid[i][0] === 1 && this.grid[i][1] === 1 && this.grid[i][2] === 1){
-                return {
-                    over: true,
-                    player: 1,
-                    positions: [{x: 0, y: i}, {x: 1, y: i}, {x: 2, y: i}]
-                };
-            }else if(this.grid[i][0] === 2 && this.grid[i][1] === 2 && this.grid[i][2] === 2){
-                return {
-                    over: true,
-                    player: 2,
-                    positions: [{x: 0, y: i}, {x: 1, y: i}, {x: 2, y: i}]
-                };
-            }
-            if(this.grid[0][i] === 1 && this.grid[1][i] === 1 && this.grid[2][i] === 1){
-                return {
-                    over: true,
-                    player: 1,
-                    positions: [{x: i, y: 0}, {x: i, y: 1}, {x: i, y: 2}]
-                };
-            }else if(this.grid[0][i] === 2 && this.grid[1][i] === 2 && this.grid[2][i] === 2){
-                return {
-                    over: true,
-                    player: 2,
-                    positions: [{x: i, y: 0}, {x: i, y: 1}, {x: i, y: 2}]
-                };
-            }
+        if(ending) {
+            this.players.forEach((player) => {
+                player.exitGame();
+            });
+        } else {
+            this.nextTurn();
         }
-        if(this.grid[0][0] === 1 && this.grid[1][1] === 1 && this.grid[2][2] === 1){
-            return {
-                over: true,
-                player: 1,
-                positions: [{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 2}]
-            };
-        }else if(this.grid[0][0] === 2 && this.grid[1][1] === 2 && this.grid[2][2] === 2){
-            return {
-                over: true,
-                player: 2,
-                positions: [{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 2}]
-            };
-        }
-        if(this.grid[0][2] === 1 && this.grid[1][1] === 1 && this.grid[2][0] === 1){
-            return {
-                over: true,
-                player: 1,
-                positions: [{x: 2, y: 0}, {x: 1, y: 1}, {x: 0, y: 2}]
-            };
-        }else if(this.grid[0][2] === 2 && this.grid[1][1] === 2 && this.grid[2][0] === 2){
-            return {
-                over: true,
-                player: 2,
-                positions: [{x: 2, y: 0}, {x: 1, y: 1}, {x: 0, y: 2}]
-            };
-        }
-        for(var i = 0 ; i < 3 ; i++){
-            for(var j = 0 ; j < 3 ; j++){
-                if(!this.grid[i][j]){
-                    return {over: false};
-                }
-            }
-        }
-        return {
-            over: true,
-            player: "tie"
-        };
-    };
-
-
-    this.player1 = players[0];
-    this.player2 = players[1];
-
-    this.start();
-
+    }
 }
 
+class Grid {
+    constructor(size) {
+        this.size = size;
 
-function Player(nickname, socket){
+        this.data = new Array(size);
+        this.horizontalCounter = [];
+        this.verticalCounter = [];
+        this.diagonalsCounter   = [0, 0];
+        for(let i = 0; i < size; i++) {
+            this.data[i] = (new Array(size)).fill(0);
+            this.horizontalCounter[i] = {sum: 0, filled: 0};
+            this.verticalCounter[i] = {sum: 0, filled: 0};
+        }
+    }
 
-    this.nickname = nickname.trim();
-    this.nickname = nickname ? (nickname.length > 10 ? nickname.substr(0, 10) + "..." : nickname) : "Player " + playerIndex++;
-    this.socket = socket;
+    setCellIfValid(x, y, value) {
+        if(x >= 0 && x < this.size && y >= 0 && y < this.size && !this.data[y][x]) {
+            this.data[y][x] = value;
+            this.horizontalCounter[x].sum += value;
+            this.horizontalCounter[x].filled++;
+            this.verticalCounter[y].sum += value;
+            this.verticalCounter[y].filled++;
+            if(x === y) {
+                this.diagonalsCounter[0] += value;
+            } else if(this.size - 1 - x === y) {
+                this.diagonalsCounter[1] += value;
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
 
-    this.playAgain = function(){
-        var self = this;
-        socket.on('play-again', function(){
-            socket.removeAllListeners('play-again');
+    winLines(x, y) {
+        const lines = [];
+        if(Math.abs(this.horizontalCounter[x].sum) === this.size) lines.push({axis: AXIS.HORIZONTAL, index: x});
+        if(Math.abs(this.verticalCounter[y].sum) === this.size) lines.push({axis: AXIS.VERTICAL, index: y});
+        if(Math.abs(this.diagonalsCounter[0]) === this.size) lines.push({axis: AXIS.DIAGONAL, index: 0});
+        if(Math.abs(this.diagonalsCounter[1]) === this.size) lines.push({axis: AXIS.DIAGONAL, index: 1});
+        return lines;
+    }
+
+    isTie() {
+        return this.horizontalCounter.every((counter) => counter.filled === this.size);
+    }
+}
+
+class Player {
+    constructor(socket, nickname, preferedSize) {
+        if(_.isString(nickname)) {
+            nickname = nickname.trim();
+            if(nickname.length) {
+                this.nickname = nickname.length > 10 ? nickname.substr(0, 10) + '...' : nickname;
+            } else {
+                this.nickname = 'Player ' + playerIndex++;
+            }
+        } else {
+            this.nickname = 'Player ' + playerIndex++;
+        }
+        this.socket = socket;
+        this.preferedSize = preferedSize;
+        this.startingAvantage = false;
+    }
+
+    exitGame() {
+        const self = this;
+        this.socket.removeAllListeners('disconnect');
+        this.socket.removeAllListeners('play');
+        this.socket.once('play-again', () => {
+            // self.socket.removeAllListeners('play-again');
             searchGame(self);
         });
-    };
-
-    this.exitGame = function(){
-        socket.removeAllListeners('disconnect');
-        socket.removeAllListeners('play');
     }
-
 }
 
-function searchGame(player){
+function searchGame(player) {
+    let queue;
+    if(queues[player.preferedSize]) {
+        queue = queues[player.preferedSize];
+    } else {
+        queue = [];
+        queues[player.preferedSize] = queue;
+    }
 
     queue.push(player);
-
-    if(queue.length === 1){
+    if(queue.length === 1) {
         player.socket.emit('queue');
-        player.socket.on('disconnect', function(){
+        player.socket.once('disconnect', () => {
             queue.splice(queue.indexOf(player), 1);
         });
-    }else{
-        new Game(queue.splice(0, 2));
+    } else {
+        new Game(player.preferedSize, queue.splice(0, 2));
     }
 }
 
 
-io.on('connection', function(socket){
+io.on('connection', (socket) => {
+    socket.emit('setup', {size: GAME_SIZE, axis: AXIS});
 
-    var player;
-
-    socket.emit('nickname');
-
-    socket.on('join', function(nickname){
-
-        player = new Player(nickname, socket);
-
-        searchGame(player);
+    socket.once('join', (data) => {
+        let preferedSize;
+        if(data.size && _.isNumber(data.size)) {
+            preferedSize = data.size <= GAME_SIZE.MIN ? GAME_SIZE.MIN : data.size >= GAME_SIZE.MAX ? GAME_SIZE.MAX : data.size;
+        } else {
+            preferedSize = GAME_SIZE.DEFAULT;
+        }
+        searchGame(new Player(socket, data.nickname, preferedSize));
     });
-
 });
+
+server.listen(PORT, console.log.bind(null, `tic-tac-toe started on port ${PORT}.`));

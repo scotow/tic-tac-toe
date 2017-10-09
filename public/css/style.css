@@ -1,71 +1,86 @@
 html, body {
     width: 100%;
     height: 100%;
+}
+
+html {
+    background: #000;
+}
+
+body {
+    position: relative;
     margin: 0;
-    padding: 0;
-    background: black;
+    font-family: Raleway, sans-serif;
     font-size: 0;
 }
 
-.center-wrapper {
-    text-align: center;
-    white-space: nowrap;
-}
-
-.center-wrapper::before {
-    content: '';
-    display: inline-block;
-    height: 100%;
-    vertical-align: middle;
-}
-
 .center {
-    text-align: center;
-    display: inline-block;
-    vertical-align: middle;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.grid-wrapper {
+    position: relative;
+    max-width: 600px;
+    width: 85vmin;
+    height: 0px;
+    padding-bottom: 100%;
 }
 
 .grid {
-    display: inline-block;
-    width: 600px;
-    height: 600px;
-}
-
-.line {
-    height: 33.333333333%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
     box-sizing: border-box;
 }
 
-.line:nth-child(-n+2){
-    border-bottom: 3px solid white;
+.line {
+    flex: 1;
+    display: flex;
+}
+
+.line:nth-child(n+2){
+    border-top: 2px solid white;
+}
+
+.line:nth-last-child(n+2){
+    border-bottom: 2px solid white;
 }
 
 .cell {
-    width: 33.333333333%;
-    height: 100%;
-    display: inline-block;
     position: relative;
+    flex: 1;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .cell:empty {
     cursor: pointer;
 }
 
-.cell:nth-child(-n+2){
-    border-right: 3px solid white;
+.cell:nth-child(n+2){
+    border-left: 2px solid white;
+}
+
+.cell:nth-last-child(n+2){
+    border-right: 2px solid white;
 }
 
 .cross::before, .cross::after{
-    position: absolute;
     content: "";
-    display: block;
-    background-color: #fff;
-    left: 45%;
+    position: absolute;
     top: 10%;
+    left: 45%;
+    display: block;
     width: 10%;
     height: 80%;
-    -webkit-border-radius: 4px;
-    -moz-border-radius: 4px;
+    background-color: #fff;
     border-radius: 4px;
     opacity: 1;
 }
@@ -79,93 +94,108 @@ html, body {
 }
 
 @keyframes cross {
-
-    from {
+    0% {
         opacity: 0;
         height: 10%;
         top: 45%;
     }
 
-    to {
+    100% {
         opacity: 1;
         height: 80%;
         top: 10%;
     }
-
 }
 
 @keyframes cross1 {
-
-    to {
+    100% {
         -webkit-transform: rotate(-45deg);
         -moz-transform: rotate(-45deg);
         transform: rotate(-45deg);
     }
-
 }
 
 @keyframes cross2 {
-
-    to {
+    100% {
         -webkit-transform: rotate(45deg);
         -moz-transform: rotate(45deg);
         transform: rotate(45deg);
     }
-
 }
 
 .circle {
-    width: 50%;
-    height: 50%;
-    opacity: 1;
-    border: 20px solid white;
-    -webkit-border-radius: 50%;
-    -moz-border-radius: 50%;
-    border-radius: 50%;
     position: absolute;
-    top: 15%;
-    left: 15%;
+    top: 50%;
+    left: 50%;
+    width: 70%;
+    height: 70%;
+    background: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
     animation: circle1 150ms forwards, circle2 300ms forwards 200ms;
 }
 
+.circle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 70%;
+    height: 70%;
+    background: black;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: circle3 150ms forwards, circle4 250ms forwards linear 200ms;
+}
+
 @keyframes circle1 {
-
-    from {
-        top: 42.5%;
-        left: 42.5%;
-        border-width: 0;
+    0% {
         opacity: 0;
-        width: 15%;
-        height: 15%;
+        width: 0;
+        height: 0;
     }
 
-    to {
-        top: 32.5%;
-        left: 32.5%;
-        border-width: 20px;
+    100% {
         opacity: 1;
-        width: 15%;
-        height: 15%;
+        width: 30%;
+        height: 30%;
     }
-
 }
 
 @keyframes circle2 {
-
-    from {
-        top: 32.5%;
-        left: 32.5%;
-        width: 15%;
-        height: 15%;
+    0% {
+        width: 30%;
+        height: 30%;
     }
 
-    to {
-        top: 15%;
-        left: 15%;
-        width: 50%;
-        height: 50%;
+    100% {
+        width: 70%;
+        height: 70%;
+    }
+}
+
+@keyframes circle3 {
+    0% {
+        width: 100%;
+        height: 100%;
     }
 
+    100% {
+        width: 40%;
+        height: 40%;
+    }
+}
+
+@keyframes circle4 {
+    0% {
+        width: 40%;
+        height: 40%;
+    }
+
+    100% {
+        width: 70%;
+        height: 70%;
+    }
 }
 
 .blink {
@@ -173,64 +203,109 @@ html, body {
 }
 
 @keyframes blink {
-
     50% {
         visibility: hidden;
     }
-
 }
 
-.players-bar {
-    margin-top: 10px;
+/*Top & bottom bar */
+.bar {
+    display: flex;
+    margin: 10px 0;
 }
 
-.player-nickname, #play-again {
-    color: white;
-    font: 20px "Raleway", sans-serif;
-    text-transform: capitalize;
+.bar > .item {
+    display: none;
     position: relative;
 }
 
-.player-nickname::after, #play-again::after {
+.bar > .item > .label {
+    color: #fff;
+}
+
+.top-bar {
+    justify-content: center;
+}
+
+.top-bar > .item > .label {
+    font-size: 30px;
+}
+
+.bottom-bar {
+    justify-content: space-between;
+}
+
+.bottom-bar > .item > .label {
+    font-size: 20px;
+    text-transform: capitalize;
+}
+
+.bar > .item > .under-bar {
     position: absolute;
-    content: "";
-    display: block;
-    width: 0;
-    height: 3px;
-    background: white;
     bottom: -8px;
-    transition: 500ms;
-    left: 50%;
-}
-
-.player-turn::after, #play-again:hover::after {
+    bottom: -5px;
     width: 100%;
-    left: 0;
+    height: 3px;
+    background: #fff;
+    transform-origin: center;
+    transform: scaleX(0);
+    transition: transform 500ms;
 }
 
-@keyframes timer {
-
-    from {
-        width: 100%;
-        left: 0;
-    }
-
-    to {
-        width: 0;
-        left: 50%;
-    }
-
+.bottom-bar > .player.playing > .under-bar,
+.bar > #play-again:hover > .under-bar {
+    transform: scaleY(1);
 }
 
-#player1 {
-    float: left;
+.bottom-bar > .player {
+    display: none;
 }
 
-#player2 {
-    float: right;
+#player1::before,
+#player1::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -18px;
+    height: 18px;
+    width: 3px;
+    background-color: #fff;
+    border-radius: 1px;
+}
+
+#player1::before {
+    transform: translateY(-50%) rotate(-45deg);
+}
+
+#player1::after {
+    transform: translateY(-50%) rotate(45deg);
+}
+
+#player2::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -28px;
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    border: 3px solid white;
+    transform: translateY(-50%);
 }
 
 #play-again {
     display: none;
     cursor: pointer;
+}
+
+@keyframes timer {
+    0% {
+        width: 100%;
+        left: 0;
+    }
+
+    100% {
+        width: 0;
+        left: 50%;
+    }
 }
