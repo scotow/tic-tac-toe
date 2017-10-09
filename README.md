@@ -1,16 +1,32 @@
-# tic-tac-toe
+# Tic-Tac-Toe
+⭕️ **Online Tic-Tac-Toe game** ❌
 
 Simple two players Tic-Tac-Toe game build using NodeJS, socket.io and express, supporting parallel games and queue system.
 
-A instance of this game is currently running here: http://tictactoe.scotow.com.
+A instance of this game is currently at http://tictactoe.scotow.com.
 
-## How to play:
+This package was made using NodeJS 8.X.
 
-Make sure you have nothing running on port 3004, then run the following commands:
+### How to install
 
-```bash
-$ npm install # Download dependencies
-$ node app.js # Start the game server
-```
+##### To install the package as global:
 
-Head to http://localhost:3005.
+Install the package using npm:
+
+`npm install -g https://github.com/Scotow/tic-tac-toe`
+
+Start the web server using the command:
+
+`tic-tac-toe`
+
+##### Install locally:
+
+Install the package using npm:
+
+`npm install https://github.com/Scotow/tic-tac-toe`
+
+Start the web server using the command:
+
+`node app.js`
+
+***Enjoy playing!***
