@@ -27,6 +27,6 @@ Install the package using npm:
 
 Start the web server using the command:
 
-`node app.js`
+`node node_modules/tic-tac-toe/app.js`
 
 ***Enjoy playing!***

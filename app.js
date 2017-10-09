@@ -14,8 +14,8 @@ const io = require('socket.io')(server, {'pingTimeout': ms('2s'), 'pingInterval'
 // Web Server & Routing
 const PORT = process.env.port || 3004;
 
-app.use(express.static('public'));
-app.use(/\/(?:[1-9]\d*)?/, express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(/\/(?:[1-9]\d*)?/, express.static(path.join(__dirname, 'public')));
 
 // Game Setup
 const GAME_SIZE = {
