@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // Moduls
 const path = require('path');
 const _ = require('underscore');
