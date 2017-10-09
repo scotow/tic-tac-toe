@@ -12,7 +12,7 @@ const server = http.createServer(app);
 const io = require('socket.io')(server, {'pingTimeout': ms('2s'), 'pingInterval': ms('2s')});
 
 // Web Server & Routing
-const PORT = process.env.port || 3004;
+const PORT = process.env.PORT || 3004;
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(/\/(?:[1-9]\d*)?/, express.static(path.join(__dirname, 'public')));
