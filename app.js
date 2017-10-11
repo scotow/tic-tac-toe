@@ -135,11 +135,8 @@ class Grid {
             this.horizontalCounter[x].filled++;
             this.verticalCounter[y].sum += value;
             this.verticalCounter[y].filled++;
-            if(x === y) {
-                this.diagonalsCounter[0] += value;
-            } else if(this.size - 1 - x === y) {
-                this.diagonalsCounter[1] += value;
-            }
+            if(x === y) this.diagonalsCounter[0] += value;
+            if(this.size - 1 - x === y) this.diagonalsCounter[1] += value;
             return true;
         } else {
             return false;
