@@ -211,13 +211,13 @@ io.on('connection', socket => {
     socket.emit('setup', { size: GAME_SIZE, axis: AXIS });
 
     socket.once('join', data => {
-        let preferedSize;
+        let preferredSize;
         if(data.size && _.isNumber(data.size)) {
-            preferedSize = data.size <= GAME_SIZE.MIN ? GAME_SIZE.MIN : data.size >= GAME_SIZE.MAX ? GAME_SIZE.MAX : data.size;
+            preferredSize = data.size <= GAME_SIZE.MIN ? GAME_SIZE.MIN : data.size >= GAME_SIZE.MAX ? GAME_SIZE.MAX : data.size;
         } else {
-            preferedSize = GAME_SIZE.DEFAULT;
+            preferredSize = GAME_SIZE.DEFAULT;
         }
-        searchGame(new Player(socket, data.nickname, preferedSize));
+        searchGame(new Player(socket, data.nickname, preferredSize));
     });
 });
 

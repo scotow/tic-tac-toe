@@ -86,7 +86,7 @@ $(function() {
                 swalDelay = 1500;
                 break;
             case 'tie':
-                title = 'Tie',
+                title = 'Tie';
                 description = 'The game has ended on a draw';
                 break;
         }
