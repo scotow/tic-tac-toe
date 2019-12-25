@@ -1,23 +1,24 @@
 #!/usr/bin/env node
 
-// Moduls
+// Imports.
+// Utils.
 const path = require('path');
 const _ = require('underscore');
 const ms = require('ms');
 
-const http = require('http');
+// Web server.
 const express = require('express');
 const app = express();
-const server = http.createServer(app);
+const server = require('http').createServer(app);
 const io = require('socket.io')(server, {'pingTimeout': ms('2s'), 'pingInterval': ms('2s')});
 
-// Web Server & Routing
-const PORT = process.env.PORT || 3004;
+// Web Server & Routing.
+const PORT = process.env.PORT || 8080;
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(/\/(?:[1-9]\d*)?/, express.static(path.join(__dirname, 'public')));
 
-// Game Setup
+// Game Setup.
 const GAME_SIZE = {
     DEFAULT: 3,
     MIN: 3,
@@ -30,7 +31,7 @@ const AXIS = {
     DIAGONAL    : 1 << 2
 };
 
-// Game data
+// Game data.
 let queues = [];
 let playerIndex = 1;
 
@@ -54,7 +55,7 @@ class Game {
         startingPlayer.startingAvantage = true;
         startingPlayer.opponent.startingPlayer = false;
 
-        this.players.forEach((player) => {
+        this.players.forEach(player => {
             player.socket.removeAllListeners('disconnect');
             player.socket.once('disconnect', () => {
                 player.opponent.socket.emit('win', {forfeit: true});
@@ -65,7 +66,7 @@ class Game {
                 player2: self.player2.nickname,
                 start: startingPlayer === player
             });
-            player.socket.on('play', (data) => {
+            player.socket.on('play', data => {
                 if(self.playing === player) self.play(player, data.position);
             });
         });
@@ -86,7 +87,7 @@ class Game {
         if(!this.grid.setCellIfValid(position.x, position.y, player.gridValue)) return;
 
         const playerIndex = player === this.player1 ? 1 : 2;
-        this.players.forEach((player) => {
+        this.players.forEach(player => {
             player.socket.emit('play', {position: position, player: playerIndex});
         });
 
@@ -98,13 +99,13 @@ class Game {
             player.opponent.socket.emit('lose', {lines: lines});
         } else if(this.grid.isTie()) {
             ending = true;
-            this.players.forEach((player) => {
+            this.players.forEach(player => {
                 player.socket.emit('tie');
             });
         }
 
         if(ending) {
-            this.players.forEach((player) => {
+            this.players.forEach(player => {
                 player.exitGame();
             });
         } else {
@@ -153,7 +154,7 @@ class Grid {
     }
 
     isTie() {
-        return this.horizontalCounter.every((counter) => counter.filled === this.size);
+        return this.horizontalCounter.every(counter => counter.filled === this.size);
     }
 }
 
@@ -206,10 +207,10 @@ function searchGame(player) {
 }
 
 
-io.on('connection', (socket) => {
-    socket.emit('setup', {size: GAME_SIZE, axis: AXIS});
+io.on('connection', socket => {
+    socket.emit('setup', { size: GAME_SIZE, axis: AXIS });
 
-    socket.once('join', (data) => {
+    socket.once('join', data => {
         let preferedSize;
         if(data.size && _.isNumber(data.size)) {
             preferedSize = data.size <= GAME_SIZE.MIN ? GAME_SIZE.MIN : data.size >= GAME_SIZE.MAX ? GAME_SIZE.MAX : data.size;
