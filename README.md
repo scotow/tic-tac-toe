@@ -13,7 +13,7 @@ This package was made using NodeJS 8.X.
 
 Install the package using npm:
 
-`npm install -g https://github.com/Scotow/tic-tac-toe`
+`npm install -g https://github.com/scotow/tic-tac-toe`
 
 Start the web server using the command:
 
@@ -23,10 +23,10 @@ Start the web server using the command:
 
 Install the package using npm:
 
-`npm install https://github.com/Scotow/tic-tac-toe`
+`git clone https://github.com/scotow/tic-tac-toe && cd tic-tac-toe`
 
 Start the web server using the command:
 
-`node node_modules/tic-tac-toe/app.js`
+`npm start`
 
 ***Enjoy playing!***
